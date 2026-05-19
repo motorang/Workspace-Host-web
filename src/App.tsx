@@ -688,6 +688,7 @@ function CombinedWorkspaceSettingsDrawer({ isOpen, onClose, isReadOnly, workspac
   const [copiedPermissions, setCopiedPermissions] = useState<any>(null);
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [transferTargetId, setTransferTargetId] = useState("");
+  const [memberToRemove, setMemberToRemove] = useState<any>(null);
   const [isMatrixEdit, setIsMatrixEdit] = useState(false);
   const [localMembers, setLocalMembers] = useState(members);
 
@@ -704,8 +705,9 @@ function CombinedWorkspaceSettingsDrawer({ isOpen, onClose, isReadOnly, workspac
   };
 
   const handlePaste = (memberId: string) => {
-    if (!copiedPermissions || !isMatrixEdit) return;
-    setLocalMembers(localMembers.map((m: any) => m.id === memberId && !m.isOwner ? { ...m, permissions: { ...copiedPermissions } } : m));
+    if (!copiedPermissions) return;
+    if (!isMatrixEdit) setIsMatrixEdit(true);
+    setLocalMembers(prev => prev.map((m: any) => m.id === memberId && !m.isOwner ? { ...m, permissions: { ...copiedPermissions } } : m));
     onShowToast(t('Paste permissions') + ' ✓');
   };
 
@@ -713,12 +715,15 @@ function CombinedWorkspaceSettingsDrawer({ isOpen, onClose, isReadOnly, workspac
   const handleCancelMatrix = () => { setLocalMembers(members); setIsMatrixEdit(false); };
   
   const handleTransferOwnership = () => {
-    setLocalMembers(localMembers.map((m: any) => {
+    const updated = members.map((m: any) => {
       if (m.id === currentUser.id) return { ...m, isOwner: false, permissions: { ...DEFAULT_PERMISSIONS, 'space.admin': true } };
       if (m.id === transferTargetId) return { ...m, isOwner: true, permissions: { ...OWNER_PERMISSIONS } };
       return m;
-    }));
+    });
+    onUpdateMembers(updated);
+    setLocalMembers(updated);
     setShowTransferModal(false);
+    onShowToast(t('Transfer Owner') + ' ✓');
   };
 
   if (isReadOnly) {
@@ -857,11 +862,11 @@ function CombinedWorkspaceSettingsDrawer({ isOpen, onClose, isReadOnly, workspac
               {highlighted.length > 0 && (
                 <>
                   <tr className="bg-yellow-50/80"><td colSpan={13} className="sticky left-0 py-1.5 px-6 bg-yellow-50/80 z-20"><span className="text-[11px] font-bold text-yellow-800 uppercase tracking-wider">{t('New')}</span></td></tr>
-                  {highlighted.map((member: any) => (<MemberRow key={member.id} member={member} currentUser={currentUser} hasCopied={!!copiedPermissions} onToggle={handleToggle} onCopy={() => { setCopiedPermissions(member.permissions); onShowToast(t('Copy permissions') + ` ${member.name}`); }} onPaste={() => handlePaste(member.id)} onTransfer={() => setShowTransferModal(true)} onRemove={() => onUpdateMembers(members.filter((m: any) => m.id !== member.id))} isHighlighted={true} isEditMode={isMatrixEdit} />))}
+                  {highlighted.map((member: any) => (<MemberRow key={member.id} member={member} currentUser={currentUser} hasCopied={!!copiedPermissions} onToggle={handleToggle} onCopy={() => { setCopiedPermissions(member.permissions); onShowToast(t('Copy permissions') + ` ${member.name}`); }} onPaste={() => handlePaste(member.id)} onTransfer={() => setShowTransferModal(true)} onRemove={() => setMemberToRemove(member)} isHighlighted={true} isEditMode={isMatrixEdit} />))}
                   <tr className="border-b-4 border-gray-200"><td colSpan={13} className="p-0"></td></tr>
                 </>
               )}
-              {regular.map((member: any) => (<MemberRow key={member.id} member={member} currentUser={currentUser} hasCopied={!!copiedPermissions} onToggle={handleToggle} onCopy={() => { setCopiedPermissions(member.permissions); onShowToast(t('Copy permissions') + ` ${member.name}`); }} onPaste={() => handlePaste(member.id)} onTransfer={() => setShowTransferModal(true)} onRemove={() => onUpdateMembers(members.filter((m: any) => m.id !== member.id))} isHighlighted={false} isEditMode={isMatrixEdit} />))}
+              {regular.map((member: any) => (<MemberRow key={member.id} member={member} currentUser={currentUser} hasCopied={!!copiedPermissions} onToggle={handleToggle} onCopy={() => { setCopiedPermissions(member.permissions); onShowToast(t('Copy permissions') + ` ${member.name}`); }} onPaste={() => handlePaste(member.id)} onTransfer={() => setShowTransferModal(true)} onRemove={() => setMemberToRemove(member)} isHighlighted={false} isEditMode={isMatrixEdit} />))}
             </tbody>
           </table>
         </div>
@@ -879,6 +884,25 @@ function CombinedWorkspaceSettingsDrawer({ isOpen, onClose, isReadOnly, workspac
               </select><ChevronDown className="w-4 h-4 text-gray-400 absolute right-3 top-2.5 pointer-events-none" />
             </div></div>
             <div className="flex space-x-3 justify-end"><button onClick={() => setShowTransferModal(false)} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors">{t('Cancel')}</button><button disabled={!transferTargetId} onClick={handleTransferOwnership} className={`px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors shadow-sm ${transferTargetId ? 'bg-red-600 hover:bg-red-700' : 'bg-red-300 cursor-not-allowed'}`}>{t('Confirm')}</button></div>
+          </div>
+        </div>
+      )}
+
+      {memberToRemove && (
+        <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+          <div className="bg-white border border-gray-200 shadow-2xl rounded-xl p-6 max-w-sm w-full animate-in zoom-in-95 duration-200">
+            <div className="flex items-center space-x-3 text-red-600 mb-3"><div className="bg-red-100 p-2 rounded-full"><Trash2 className="w-6 h-6" /></div><h3 className="text-lg font-bold text-gray-900">{t('Remove member')}</h3></div>
+            <p className="text-sm text-gray-600 mb-5 leading-relaxed">{t('Are you sure you want to remove this member?')}</p>
+            <div className="flex space-x-3 justify-end">
+              <button onClick={() => setMemberToRemove(null)} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors">{t('Cancel')}</button>
+              <button onClick={() => {
+                const updated = members.filter((m: any) => m.id !== memberToRemove.id);
+                onUpdateMembers(updated);
+                setLocalMembers(updated);
+                setMemberToRemove(null);
+                onShowToast(t('Remove member') + ' ✓');
+              }} className="px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors shadow-sm bg-red-600 hover:bg-red-700">{t('Confirm')}</button>
+            </div>
           </div>
         </div>
       )}
@@ -994,15 +1018,13 @@ function MemberRow({ member, currentUser, hasCopied, onToggle, onCopy, onPaste, 
         );
       })))}
       <td className="sticky right-0 bg-white py-3 px-2 text-center border-l border-gray-100 z-20 shadow-[-1px_0_4px_-1px_rgba(0,0,0,0.05)] group-hover:bg-gray-50/90 transition-colors">
-        {isEditMode && (
-          <MemberActionDropdown member={member} currentUser={currentUser} hasCopied={hasCopied} onCopy={onCopy} onPaste={onPaste} onTransfer={onTransfer} onRemove={onRemove} />
-        )}
+        <MemberActionDropdown member={member} currentUser={currentUser} hasCopied={hasCopied} onCopy={onCopy} onPaste={onPaste} onTransfer={onTransfer} onRemove={onRemove} isEditMode={isEditMode} />
       </td>
     </tr>
   );
 }
 
-function MemberActionDropdown({ member, currentUser, hasCopied, onCopy, onPaste, onTransfer, onRemove }: any) {
+function MemberActionDropdown({ member, currentUser, hasCopied, onCopy, onPaste, onTransfer, onRemove, isEditMode }: any) {
   const { t } = useContext(I18nContext);
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -1029,11 +1051,15 @@ function MemberActionDropdown({ member, currentUser, hasCopied, onCopy, onPaste,
             <>
               <button onClick={() => handle(onCopy)} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"><Copy className="w-4 h-4 mr-2 text-gray-400" /> {t('Copy permissions')}</button>
               <button disabled={!hasCopied} onClick={() => handle(onPaste)} className={`w-full text-left px-4 py-2 text-sm flex items-center ${hasCopied ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-300 cursor-not-allowed'}`}><ClipboardPaste className="w-4 h-4 mr-2 text-gray-400" /> {t('Paste permissions')}</button>
-              <div className="my-1 border-t border-gray-100"></div>
-              <button onClick={() => handle(onRemove)} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"><Trash2 className="w-4 h-4 mr-2" /> {t('Remove member')}</button>
+              {!isEditMode && (
+                <>
+                  <div className="my-1 border-t border-gray-100"></div>
+                  <button onClick={() => handle(onRemove)} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"><Trash2 className="w-4 h-4 mr-2" /> {t('Remove member')}</button>
+                </>
+              )}
             </>
           )}
-          {member.isOwner && member.id === currentUser.id && (
+          {member.isOwner && member.id === currentUser.id && !isEditMode && (
             <button onClick={() => handle(onTransfer)} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"><Shield className="w-4 h-4 mr-2" /> {t('Transfer Owner')}</button>
           )}
         </div>
