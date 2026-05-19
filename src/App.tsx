@@ -22,7 +22,7 @@ const DICT: Record<string, Record<string, string>> = {
     'No description': 'Không có mô tả', 'Allowed formats': 'Cho phép: PNG, JPEG. Tối đa 1 MB.', 'Workspace details': 'Chi tiết workspace', 'Manage permissions': 'Quản lý thành viên & Phân quyền',
     'Copy permissions': 'Copy quyền', 'Paste permissions': 'Dán quyền', 'Remove member': 'Xóa thành viên', 'Transfer Owner': 'Chuyển Owner', 'Select member': '-- Chọn thành viên --',
     'Save permissions': 'Lưu phân quyền', 'Holding copied permissions': 'Đang giữ quyền đã copy', 'Add new member': 'Thêm thành viên mới', 'Edit permissions': 'Chỉnh sửa phân quyền', 'Member': 'Thành viên',
-    'Admin access': 'Quản trị viên: Quản lý member, cấu hình quyền', 'Create': 'Create', 'Assign': 'Assign', 'Delete': 'Delete', 'Space': 'Space', 'Enable': 'Mở lại', 'Unarchive': 'Khôi phục',
+    'Admin access': 'Quản trị viên: Quản lý member, cấu hình quyền', 'Create': 'Tạo', 'Assign': 'Giao việc', 'Delete': 'Xóa', 'Space': 'Workspace', 'Enable': 'Mở lại', 'Unarchive': 'Khôi phục',
     'Transfer ownership desc': 'Vui lòng chọn thành viên bạn muốn chuyển quyền sở hữu. <b>Tài khoản của bạn sẽ được tự động đưa về quyền mặc định kèm theo quyền Admin.</b>', 'Avatar': 'Hình ảnh đại diện',
     'Save info': 'Lưu thông tin', 'Cancel edit': 'Huỷ sửa', 'New members': 'Thành viên mới'
   },
@@ -512,7 +512,7 @@ function WorkspacePermissionPrototype() {
         isOpen={drawerType === 'WORKSPACE_SETTINGS' || drawerType === 'WORKSPACE_DETAILS'} 
         isReadOnly={drawerType === 'WORKSPACE_DETAILS' || !isCurrentUserAdmin} 
         workspace={workspaces.find(w => w.id === viewingWorkspaceId) || activeWorkspace} 
-        onClose={() => setDrawerType('NONE')} 
+        onClose={() => { setDrawerType('NONE'); setHighlightedMembers([]); }} 
         members={workspaceMembers} 
         currentUser={currentUser} 
         highlightedMembers={highlightedMembers} 
@@ -524,7 +524,13 @@ function WorkspacePermissionPrototype() {
       
       <AddMemberDrawer 
         isOpen={drawerType === 'ADD_MEMBER'} 
-        onClose={() => setDrawerType('NONE')} 
+        onClose={() => {
+          if (addMemberSource === 'WORKSPACE_SETTINGS') {
+            setDrawerType('WORKSPACE_SETTINGS');
+          } else {
+            setDrawerType('NONE');
+          }
+        }} 
         onSuccess={handleAddMembersSuccess} 
         workspaceMembers={workspaceMembers} 
         source={addMemberSource}
@@ -685,7 +691,7 @@ function CombinedWorkspaceSettingsDrawer({ isOpen, onClose, isReadOnly, workspac
   const [isMatrixEdit, setIsMatrixEdit] = useState(false);
   const [localMembers, setLocalMembers] = useState(members);
 
-  useEffect(() => { if (!isOpen) setIsMatrixEdit(false); }, [isOpen]);
+  useEffect(() => { if (isOpen && highlightedMembers.length > 0) setIsMatrixEdit(true); else if (!isOpen) setIsMatrixEdit(false); }, [isOpen, highlightedMembers]);
   useEffect(() => { if (!isMatrixEdit) setLocalMembers(members); }, [members, isMatrixEdit]);
 
   const highlighted = localMembers.filter((m: any) => highlightedMembers.includes(m.id) && !m.isOwner);
