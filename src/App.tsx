@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useContext, createContext } from 'react';
 import { 
-  MoreHorizontal, UserPlus, Search, X, Plus, 
+  MoreHorizontal, Search, X, Plus, 
   Lock, Check, Trash2, ChevronDown, Home, Layout, 
-  Settings, Users, Shield, Copy, ClipboardPaste, Info, Pencil, Pin, PinOff,
-  ChevronLeft, LayoutGrid, Clock, AlertCircle, ChevronRight, Eye, Ban, Archive, Camera, Globe
+  Shield, Copy, ClipboardPaste, Info, Pencil, Pin,
+  ChevronLeft, LayoutGrid, AlertCircle, ChevronRight, Eye, Ban, Archive, Camera, Globe
 } from 'lucide-react';
 
 const DICT: Record<string, Record<string, string>> = {
@@ -562,7 +562,7 @@ function WorkspacePermissionPrototype() {
 // ============================================================================
 
 function LanguageToggle() {
-  const { lang, t } = useContext(I18nContext);
+  const { lang } = useContext(I18nContext);
   return (
     <div className="p-4 border-t border-gray-100">
       <button onClick={() => { document.dispatchEvent(new CustomEvent('toggleLang')); }} className="w-full flex items-center justify-center px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
