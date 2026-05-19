@@ -707,7 +707,7 @@ function CombinedWorkspaceSettingsDrawer({ isOpen, onClose, isReadOnly, workspac
   const handlePaste = (memberId: string) => {
     if (!copiedPermissions) return;
     if (!isMatrixEdit) setIsMatrixEdit(true);
-    setLocalMembers(prev => prev.map((m: any) => m.id === memberId && !m.isOwner ? { ...m, permissions: { ...copiedPermissions } } : m));
+    setLocalMembers((prev: any[]) => prev.map((m: any) => m.id === memberId && !m.isOwner ? { ...m, permissions: { ...copiedPermissions } } : m));
     onShowToast(t('Paste permissions') + ' ✓');
   };
 
